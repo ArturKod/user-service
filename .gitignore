@@ -42,3 +42,6 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+# Maven shade plugin
+dependency-reduced-pom.xml

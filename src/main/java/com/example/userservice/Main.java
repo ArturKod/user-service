@@ -1,7 +1,5 @@
 package com.example.userservice;
 
-import com.example.userservice.dao.UserDao;
-import com.example.userservice.dao.UserDaoImpl;
 import com.example.userservice.exception.UserServiceException;
 import com.example.userservice.model.User;
 import com.example.userservice.util.HibernateUtil;
@@ -15,7 +13,7 @@ import java.util.Scanner;
 public class Main {
 
     private static final Logger log = LoggerFactory.getLogger(Main.class);
-    private static final UserDao userDao = new UserDaoImpl();
+    private static final UserService userService = new UserServiceImpl();
     private static final Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
@@ -25,7 +23,6 @@ public class Main {
         while (running) {
             printMenu();
             int choice = readInt("Выберите пункт: ");
-
             try {
                 switch (choice) {
                     case 1 -> createUser();
@@ -59,23 +56,19 @@ public class Main {
         String name = readString("Имя: ");
         String email = readString("Email: ");
         int age = readInt("Возраст: ");
-
-        User user = new User(name, email, age);
-        User saved = userDao.save(user);
+        User saved = userService.createUser(name, email, age);
         System.out.println("Создан: " + saved);
     }
 
     private static void findUserById() {
         long id = readInt("ID: ");
-        Optional<User> user = userDao.findById(id);
-        user.ifPresentOrElse(
-                System.out::println,
-                () -> System.out.println("Пользователь не найден.")
-        );
+        Optional<User> user = userService.getUserById(id);
+        user.ifPresentOrElse(System.out::println,
+                () -> System.out.println("Пользователь не найден."));
     }
 
     private static void findAllUsers() {
-        List<User> users = userDao.findAll();
+        List<User> users = userService.getAllUsers();
         if (users.isEmpty()) {
             System.out.println("Список пуст.");
         } else {
@@ -85,32 +78,31 @@ public class Main {
 
     private static void updateUser() {
         long id = readInt("ID пользователя для обновления: ");
-        Optional<User> existing = userDao.findById(id);
+        Optional<User> existing = userService.getUserById(id);
         if (existing.isEmpty()) {
             System.out.println("Пользователь не найден.");
             return;
         }
-
         User user = existing.get();
+
         String name = readString("Новое имя (" + user.getName() + "): ");
-        if (!name.isBlank()) user.setName(name);
-
         String email = readString("Новый email (" + user.getEmail() + "): ");
-        if (!email.isBlank()) user.setEmail(email);
-
         String ageStr = readString("Новый возраст (" + user.getAge() + "): ");
-        if (!ageStr.isBlank()) user.setAge(Integer.parseInt(ageStr));
 
-        User updated = userDao.update(user);
+        User updated = userService.updateUser(
+                id,
+                name.isBlank() ? null : name,
+                email.isBlank() ? null : email,
+                ageStr.isBlank() ? null : Integer.parseInt(ageStr)
+        );
         System.out.println("Обновлён: " + updated);
     }
 
     private static void deleteUser() {
         long id = readInt("ID пользователя для удаления: ");
-        userDao.deleteById(id);
-        System.out.println("Операция удаления выполнена.");
+        userService.deleteUser(id);
+        System.out.println("Пользователь удалён.");
     }
-
 
     private static String readString(String prompt) {
         System.out.print(prompt);
